@@ -1,0 +1,5 @@
+# Low-precedence defaults — easy to override with -e or in the inventory
+packages:
+  - nginx
+  - curl
+listen_port: 8080

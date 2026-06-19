@@ -1,0 +1,19 @@
+- name: Set up web servers
+  hosts: web
+  become: true
+  tasks:
+    - name: Install nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Ensure nginx is started and enabled on boot
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Confirm
+      ansible.builtin.debug:
+        msg: "nginx is set up on {{ ansible_hostname }}"

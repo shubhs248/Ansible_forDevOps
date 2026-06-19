@@ -1,0 +1,11 @@
+server {
+    listen {{ listen_port }};
+    server_name {{ ansible_hostname }};
+
+    root /var/www/app;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

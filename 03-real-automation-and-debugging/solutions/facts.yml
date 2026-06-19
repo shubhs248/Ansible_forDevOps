@@ -1,0 +1,10 @@
+- name: Show host facts
+  hosts: web
+  gather_facts: true
+  tasks:
+    - name: Print host details
+      ansible.builtin.debug:
+        msg: >-
+          {{ ansible_hostname }} is {{ ansible_os_family }},
+          IP {{ ansible_default_ipv4.address | default('n/a') }},
+          {{ ansible_memtotal_mb }} MB RAM

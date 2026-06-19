@@ -1,0 +1,64 @@
+- name: Install and configure the web app end to end
+  hosts: web
+  become: true
+  vars:
+    listen_port: 8080
+  tasks:
+    - name: Install packages
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - curl
+        state: present
+        update_cache: true
+
+    - name: Create the webadmin user
+      ansible.builtin.user:
+        name: webadmin
+        system: true
+        shell: /usr/sbin/nologin
+
+    - name: Create the app directory
+      ansible.builtin.file:
+        path: /var/www/app
+        state: directory
+        owner: webadmin
+        group: webadmin
+        mode: "0755"
+
+    - name: Deploy the landing page
+      ansible.builtin.template:
+        src: index.html.j2
+        dest: /var/www/app/index.html
+        owner: webadmin
+        group: webadmin
+        mode: "0644"
+
+    - name: Deploy the nginx site config
+      ansible.builtin.template:
+        src: app.conf.j2
+        dest: /etc/nginx/conf.d/app.conf
+        mode: "0644"
+      notify: Restart nginx
+
+    - name: Ensure nginx is running and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Verify the site responds
+      ansible.builtin.uri:
+        url: "http://localhost:{{ listen_port }}"
+        status_code: 200
+      register: result
+
+    - name: Show the verification result
+      ansible.builtin.debug:
+        msg: "Site returned HTTP {{ result.status }}"
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

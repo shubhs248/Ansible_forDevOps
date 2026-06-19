@@ -1,0 +1,40 @@
+- name: Set up nginx (fixed)
+  hosts: web
+  become: true                                   # FIX 2: escalate privileges for apt + /etc writes
+  tasks:
+    - name: Install nginx
+      ansible.builtin.apt:                        # FIX 3: idempotent module instead of shell
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Deploy config
+      ansible.builtin.copy:
+        dest: /etc/nginx/conf.d/site.conf
+        content: "server { listen 8080; }"
+      notify: Restart nginx                       # FIX 1: aligned; FIX 4: matches handler name exactly
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+
+# ─────────────────────────────────────────────────────────────
+# What was wrong (say these out loud in an interview):
+#
+# BUG 1 — Indentation: `notify:` was indented under the module args with an
+#         extra space, breaking the YAML so the play wouldn't parse. YAML
+#         indentation must be consistent, and tabs are illegal.
+#
+# BUG 2 — Missing `become: true`: installing packages and writing to /etc
+#         needs root. Without escalation you get "permission denied".
+#
+# BUG 3 — `shell: apt install -y nginx` is NOT idempotent — it runs every
+#         time and always reports `changed`, and can't tell nginx is already
+#         installed. The `apt` module checks state and only acts if needed.
+#
+# BUG 4 — Handler name mismatch: the task notified `restart nginx` (lowercase)
+#         but the handler is named `Restart nginx`. Names must match exactly,
+#         or the handler silently never runs and the service isn't restarted.
+# ─────────────────────────────────────────────────────────────
